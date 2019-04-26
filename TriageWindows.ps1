@@ -32,14 +32,12 @@ This script will extract triage information that belongs to a specific Windows S
 This script will create a folder under %TEMP% directory with %HOSTNAME%_TRIAGE_%DATE% format.
 The above informations will be created under this folder.
 
-This script will extract the eventviewer logs in last 30 days, If you need to change this time-range you can edit this script 
-
 .EXAMPLE
 ./TriageWindows.ps1
 
 .NOTES
     Version:    0.3
-    Author:     Yigit Turak
+    Author:     yigitturak
 #>
 
 param
