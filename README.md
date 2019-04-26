@@ -13,8 +13,11 @@ WARNING!!! This script should be run with Administrator rights on the servers.
 The following informations are extracted.
 
 System information --> Build, service pack level, installed patches, etc
+
 Windows version --> Logs the version number of the target OS
+
 NetBIOS information --> Active NetBIOS sessions, transferred files, etc
+
 Current date and time --> Current system date and time
 Eventviewer logs --> including Application, System and Security in last 30 days
 Registry hives --> Copy of all registry hives
