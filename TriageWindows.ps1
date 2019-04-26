@@ -27,7 +27,7 @@ This script will extract triage information that belongs to a specific Windows S
     Open TCP/UDP ports --> Active open TCP or UDP ports                    
     DNS cache entries --> List of complete DNS cache contents           
     ARP table information --> List of complete ARP cache contents
-    Hash of all collected triage data --> MD5 hash of all data collected
+    Hash of all collected triage data --> SHA1 hash of all data collected
 
 This script will create a folder under %TEMP% directory with %HOSTNAME%_TRIAGE_%DATE% format.
 The above informations will be created under this folder.
