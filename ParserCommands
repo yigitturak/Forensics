@@ -1,0 +1,40 @@
+## This File is presenting some useful linux command for parsing IoCs
+
+#convert the IoCs to normal
+cat input_data.txt | sed 's/hxxp/http/g' | sed 's/\[\.\]/\./g' | sed 's/\/$//g' | sed 's/:443//g' | sed 's/:8000//g' | sed 's/:8080//g' | sed 's/:80//g' > output_data.txt
+
+Example:
+input_data.txt:
+hxxp://test.com
+hxxps://example[.]net/
+iocs.cn:8000/
+
+output_data.txt
+http://test.com
+https://example.net
+iocs.cn
+
+
+#Bash script for preparing Kibana search
+
+#!/bin/bash
+TOTALLine=`wc -l < output_data.txt`
+echo "$TOTALLine"
+i=1
+
+echo "{\n\"query\": { \n\t\"bool\": { \n\t\t\"should\": ["
+for URL in $(cat output_data/$1)
+do
+	if [ $i -ne $TOTALLine ]
+        then
+		echo "\t\t{\n\t\t\"match_phrase\": {\n\t\t \"request_url_host\": \"$URL\"\n\t\t }\n\t\t},"
+	else
+		echo "\t\t{\n\t\t\"match_phrase\": {\n\t\t \"request_url_host\": \"$URL\"\n\t\t }\n\t\t}"
+	fi
+	i=`expr $i + 1`
+done	
+echo " \n\t\t],\n\t\t\"minimum_should_match\": 1\n\t\t}\n\t}\n}"
+
+
+
+
