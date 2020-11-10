@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 This script will extract triage information that belongs to a specific Windows Server
 
@@ -9,8 +9,8 @@ This script will extract triage information that belongs to a specific Windows S
     Windows version --> Logs the version number of the target OS
     NetBIOS information --> Active NetBIOS sessions, transferred files, etc
     Current date and time --> Current system date and time
-    Eventviewer logs --> including Application, System and Security in last 30 days
-    Registry hives --> Copy of all registry hives
+    Eventviewer logs --> including Application, System, Security and powershell for last 15 days.
+    Registry hives --> Copy of all registry hives - HKLM\SYSTEM\CurrentControlSet
     Current user information --> User running this script
     Local user account names --> List of local user accounts
     Local administrators --> List of local admin right users
@@ -27,17 +27,20 @@ This script will extract triage information that belongs to a specific Windows S
     Open TCP/UDP ports --> Active open TCP or UDP ports                    
     DNS cache entries --> List of complete DNS cache contents           
     ARP table information --> List of complete ARP cache contents
+    Antivirus logs --> All logs of Mcafee or Microsoft AV
     Hash of all collected triage data --> SHA1 hash of all data collected
 
 This script will create a folder under %TEMP% directory with %HOSTNAME%_TRIAGE_%DATE% format.
 The above informations will be created under this folder.
 
+This script should be run by administrator right on the system.
+
 .EXAMPLE
-./TriageWindows.ps1
+./Triage_v1.0.ps1
 
 .NOTES
-    Version:    0.3
-    Author:     yigitturak
+    Version:    1.0
+    Author:     Yigit Turak
 #>
 
 param
@@ -48,138 +51,77 @@ param
     [string]$pathEventViewer,
     [string]$pathProcess,
     [string]$pathNetwork,
-    [string]$seperator,
+    [string[]]$pathAll,
+    [string[]]$fileAll,
     [string]$destinationZip
 )
+
 $tempFolderPath = $env:TEMP
-Write-Host "Temp folder path is " $env:TEMP
 $date = Get-Date -UFormat %d%m%y
-Write-Host "Date: "$date
 $mainPath = $tempFolderPath+"\"+$env:COMPUTERNAME+"_TRIAGE_"+$date
-Write-Host "Main path: "$mainPath
 $pathEventViewer = $mainPath + "\EVENTVIEWER"
 $pathProcess = $mainPath + "\PROCESS"
 $pathNetwork = $mainPath + "\NETWORK"
-
+$pathAll = "$mainPath", "$pathEventViewer", "$pathProcess", "$pathNetwork"
+$fileAll = "$mainpath\accountInfo.txt", "$mainpath\filesHash.txt", "$mainpath\installedPatches.json", "$mainpath\localadmin-users.json", "$mainpath\netbios-info.json", "$mainpath\systemInfo.json", "$pathNetwork\arpTable.json", "$pathNetwork\connectionProfile.json", "$pathNetwork\DNScaches.json", "$pathNetwork\ethernetInfo.json", "$pathNetwork\netConnections.json", "$pathNetwork\networkInfo.json", "$pathNetwork\routing.json", "$pathNetwork\tcpUDPConnections.txt", "$pathProcess\autorun.json", "$pathProcess\installedApps.json", "$pathProcess\installedApps_Fulldetailed.json", "$pathProcess\openedFiles.json", "$pathProcess\runningProcess.json", "$pathProcess\services.json", "$pathProcess\taskSchedule.json", "$pathProcess\tempFolder_user.json", "$pathProcess\tempFolder_windir.json"
+$destinationZip = $mainPath + ".zip"
+$logDateToday = Get-Date
+$daysBefore = 15
+$logDateBefore = $logDateToday.AddDays(-$daysBefore)
 
 Function Set-FolderTree()
 {
-    If(-Not (Test-Path -Path $mainPath)) 
+    ForEach ($path in $pathAll)
     {
-        New-Item -Path $mainPath -ItemType Directory
-    }
-    If(-Not (Test-Path -Path $pathEventViewer)) 
-    {
-        New-Item -Path $pathEventViewer -ItemType Directory
-    }
-    If(-Not (Test-Path -Path $pathProcess)) 
-    {
-        New-Item -Path $pathProcess -ItemType Directory
-    }
-    If(-Not (Test-Path -Path $pathNetwork)) 
-    {
-        New-Item -Path $pathNetwork -ItemType Directory
+        If(-Not (Test-Path -Path $path)) 
+        {
+            New-Item -Path $path -ItemType Directory
+        }
     }
 }
 
 Function Set-FileTree()
 {
-    If(-Not (Test-Path -Path $mainPath\systemInfo.txt)) 
+    ForEach ($file in $fileAll)
     {
-        New-Item $mainPath\systemInfo.txt
-    }
-    If(-Not (Test-Path -Path $mainPath\accountInfo.txt)) 
-    {
-        New-Item $mainPath\accountInfo.txt
-    }
-    If(-Not (Test-Path -Path $mainPath\filesHash.txt)) 
-    {
-        New-Item $mainPath\filesHash.txt
-    }
-    If(-Not (Test-Path -Path $pathProcess\installedApps.txt)) 
-    {
-        New-Item $pathProcess\installedApps.txt
-    }
-    If(-Not (Test-Path -Path $pathProcess\runningProcess.txt)) 
-    {
-        New-Item $pathProcess\runningProcess.txt
-    }
-    If(-Not (Test-Path -Path $pathProcess\autorun.txt)) 
-    {
-        New-Item $pathProcess\autorun.txt
-    }
-    If(-Not (Test-Path -Path $pathProcess\taskSchedule.txt)) 
-    {
-        New-Item $pathProcess\taskSchedule.txt
-    }
-    If(-Not (Test-Path -Path $pathProcess\openedFiles.txt)) 
-    {
-        New-Item $pathProcess\openedFiles.txt
-    }
-    If(-Not (Test-Path -Path $pathProcess\tempFolder.txt)) 
-    {
-        New-Item $pathProcess\tempFolder.txt
-    }
-    If(-Not (Test-Path -Path $pathNetwork\networkInfo.txt)) 
-    {
-        New-Item $pathNetwork\networkInfo.txt
-    }
-    If(-Not (Test-Path -Path $pathNetwork\ethernetInfo.txt)) 
-    {
-        New-Item $pathNetwork\ethernetInfo.txt
-    }
-    If(-Not (Test-Path -Path $pathNetwork\netConnections.txt)) 
-    {
-        New-Item $pathNetwork\netConnections.txt
-    }
-    If(-Not (Test-Path -Path $pathNetwork\tcpUDPConnections.txt)) 
-    {
-        New-Item $pathNetwork\tcpUDPConnections.txt
-    }
-    If(-Not (Test-Path -Path $pathNetwork\DNScaches.txt)) 
-    {
-        New-Item $pathNetwork\DNScaches.txt
-    }
-    If(-Not (Test-Path -Path $pathNetwork\arpTable.txt)) 
-    {
-        New-Item $pathNetwork\arpTable.txt
+        If(-Not (Test-Path -Path $file)) 
+        {
+            New-Item $file
+        }   
     }
 }
 
+#This function gets system, netbios and patch information
 Function Get-SystemInfo()
 {
-    Add-Content $mainPath\systemInfo.txt "----------FULL SYSTEM INFORMATION----------" -Encoding Unicode
-    Get-CimInstance Win32_OperatingSystem | FL * | Out-File -FilePath $mainPath\systemInfo.txt -Append
-    Add-Content $mainPath\systemInfo.txt $seperator  -Encoding Unicode
-    Add-Content $mainPath\systemInfo.txt "----------INSTALLED PATCHES AND HOTFIXES----------" -Encoding Unicode
-    Get-WmiObject -Class win32_quickfixengineering | Out-File -FilePath $mainPath\systemInfo.txt -Append
-    Add-Content $mainPath\systemInfo.txt $seperator -Encoding Unicode
-    Add-Content $mainPath\systemInfo.txt "----------NETBIOS INFORMATION----------" -Encoding Unicode
-    Get-SmbSession | Out-File -FilePath $mainPath\systemInfo.txt -Append
+    Add-Content $mainPath\systemInfo.json "[" -Encoding Unicode 
+    Get-CimInstance Win32_OperatingSystem | Select-Object -Property FreePhysicalMemory,FreeSpaceInPagingFiles,FreeVirtualMemory,Caption,InstallDate,CSName,CurrentTimeZone,LastBootUpTime,LocalDateTime,NumberOfUsers,Version,Organization,OSArchitecture,BootDevice,SystemDevice,SystemDirectory,SystemDrive | ConvertTo-JSON | Out-File -FilePath $mainPath\systemInfo.json -Append
+    Add-Content $mainPath\systemInfo.json "]" -Encoding Unicode
+    Get-WmiObject -Class win32_quickfixengineering | Select-Object -Property Description,HotFixID,InstalledBy,InstalledOn | Sort-Object InstalledOn | ConvertTo-JSON | Out-File -FilePath $mainPath\installedPatches.json
+    Get-SmbSession | ConvertTo-Json | Out-File -FilePath $mainPath\netbios-info.json
 }
 
+#This function copies app,sys and sec event logs to our folder
 Function Get-EventviewerLogs()
 {
-    Add-Content $pathEventViewer\logInfo.txt "----------EVENT LOG LIST AND DETAILS----------" -Encoding Unicode
-    Get-EventLog -List | Out-File -FilePath $pathEventViewer\logInfo.txt -Append
-    Copy-Item -Path C:\Windows\System32\winevt\Logs\Application.evtx -Destination $pathEventViewer\application.evtx
-    Copy-Item -Path C:\Windows\System32\winevt\Logs\System.evtx -Destination $pathEventViewer\system.evtx
-    Copy-Item -Path C:\Windows\System32\winevt\Logs\Security.evtx -Destination $pathEventViewer\security.evtx
+    Set-Variable -Name LogNames -Value @("Windows Powershell", "Security", "Application", "System")
+    Set-Variable -Name EventTypes -Value @("Error", "Warning", "Information", "FailureAudit", "SuccessAudit")
+
+    foreach($log in $LogNames)
+    {
+        Write-Host Processing $log
+        $ExportFile = $pathEventViewer + "\" + $log + ".csv"
+        Get-Eventlog -log $log -After $logDateBefore -EntryType $EventTypes | Export-CSV $ExportFile -NoTypeInfo  #EXPORT
+    }
 }
 
-<#
+#This function extracts the regestry values under HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet
 Function Get-Registry()
 {
-    param 
-    (
-        [string]$commandReg
-    )
-    $commandReg = "RegEdit.exe /a "+$mainPath+"\registry.reg"
-    cmd.exe /c $commandReg
+    reg export HKLM\SYSTEM\CurrentControlSet $mainpath\registry.reg
 }
-#>
 
-
+#This function gathers the account information like current user, local user list, local admin accounts and logged on user list
 Function Get-AccountInfo()
 {
     param
@@ -187,75 +129,125 @@ Function Get-AccountInfo()
         [string]$currentUser
     )
     Add-Content $mainPath\accountInfo.txt "----------CURRENT USER INFORMATION----------" -Encoding Unicode
-    $currentUser = $env:USERDNSDOMAIN + "\" + $env:USERNAME
+    $currentUser = $env:USERDNSDOMAIN + "\" + $ENV:USERNAME
     $currentUser | Out-File -FilePath $mainPath\accountInfo.txt -Append
-    Add-Content $mainPath\accountInfo.txt $seperator -Encoding Unicode
-    Add-Content $mainPath\accountInfo.txt "----------LOCAL USER LIST----------" -Encoding Unicode
-    Get-LocalUser | Out-File -FilePath $mainPath\accountInfo.txt -Append
-    Add-Content $mainPath\accountInfo.txt $seperator -Encoding Unicode
-    Add-Content $mainPath\accountInfo.txt "----------LOCAL ADMINISTRATOR USER LIST----------" -Encoding Unicode
-    Get-LocalGroupMember -Group "Administrators" | Out-File -FilePath $mainPath\accountInfo.txt -Append
-    Add-Content $mainPath\accountInfo.txt $seperator -Encoding Unicode
+    
+    Get-LocalUser | ConvertTo-Json | Out-File -FilePath $mainPath\local-accounts.json
+    Get-LocalGroupMember -Group "Administrators" | ConvertTo-Json | Out-File -FilePath $mainPath\localadmin-users.json
+    
     Add-Content $mainPath\accountInfo.txt "----------LOGGED ON USER LIST----------" -Encoding Unicode 
     qwinsta | Out-File -FilePath $mainPath\accountInfo.txt -Append
 }
 
+#This function extracts running processes, autorun apps, scheduled tasks, SMB open files, files under temp folder and list of services
 Function Get-ProcessServiceApplication()
 {
-    Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | Format-Table –AutoSize > $pathProcess\installedApps.txt
-    Get-Process | Format-Table * –AutoSize > $pathProcess\runningProcess.txt
-    Add-Content $pathProcess\autorun.txt $seperator -Encoding Unicode
-    Add-Content $pathProcess\autorun.txt "----------LIST OF AUTORUN APPLICATIONS----------" -Encoding Unicode     
-    Get-CimInstance Win32_StartupCommand | Select-Object Name, command, Location, User | Format-Table * –AutoSize | Out-File -FilePath $pathProcess\autorun.txt -Append
-    Add-Content $pathProcess\autorun.txt $seperator -Encoding Unicode
-    Add-Content $pathProcess\autorun.txt "----------LIST OF SERVICES----------" -Encoding Unicode     
-    Get-Service | Format-Table * -AutoSize | Out-File -FilePath $pathProcess\autorun.txt -Append    
-    Get-ScheduledTask | Format-Table * -AutoSize | Out-File -FilePath $pathProcess\taskSchedule.txt
-    Get-SMBOpenFile | Select-Object -Property * | Out-File -FilePath $pathProcess\openedFiles.txt
-    Get-ChildItem -Path $tempFolderPath | Out-File -FilePath $pathProcess\tempFolder.txt
+    Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | ConvertTo-Json | Out-File -FilePath $pathProcess\installedApps.json
+    Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object -Property * | ConvertTo-Json | Out-File -FilePath $pathProcess\installedApps_Fulldetailed.json
+
+    $ProcExes = Get-WmiObject -Namespace root\cimv2 -Class CIM_ProcessExecutable 
+    $x = foreach ($item in $ProcExes) 
+    {
+    [wmi]"$($item.Antecedent)" | Select-Object Name,Filename,Extension,Manufacturer,Version -Unique
+    } 
+    $x | Sort-Object filename | Get-Unique -AsString| ConvertTo-Json |  Out-File -FilePath $pathProcess\runningProcess.json -Force
+
+    Get-CimInstance Win32_StartupCommand | Select-Object Name, command, User | ConvertTo-Json | Out-File -FilePath $pathProcess\autorun.json
+    Get-Service | Select-Object Name, DisplayName, Status | ConvertTo-Json | Out-File -FilePath $pathProcess\services.json
+    Get-ScheduledTask | Select-Object -Property * |  ConvertTo-Json |Out-File -FilePath $pathProcess\taskSchedule.json
+    Get-SMBOpenFile | Select-Object -Property * |  ConvertTo-Json |Out-File -FilePath $pathProcess\openedFiles.json
+    Get-ChildItem -Path $tempFolderPath -Recurse | Select-Object -Property FullName, BaseName, Name, Parent, Root, Extension, CreationTimeUtc, LastAccessTimeUtc, LastWriteTimeUtc| ConvertTo-Json | Out-File -FilePath $pathProcess\tempFolder_user.json
+    Get-ChildItem -Path $env:windir\temp -Recurse | Select-Object -Property FullName, BaseName, Name, Parent, Root, Extension, CreationTimeUtc, LastAccessTimeUtc, LastWriteTimeUtc| ConvertTo-Json | Out-File -FilePath $pathProcess\tempFolder_windir.json
 }
 
+#This function extracts the network information like IP, routings, connections, DNS cache and ARP table
 Function Get-NetworkInfo()
 {
-    Add-Content $pathNetwork\networkInfo.txt $seperator -Encoding Unicode
-    Add-Content $pathNetwork\networkInfo.txt "----------IP CONFIGURATION----------" -Encoding Unicode 
-    Get-NetIPAddress | Select-Object -Property PrefixOrigin, InterfaceAlias, AddressFamily, IPv4Address, AddressState | Format-Table * -AutoSize | Out-File -FilePath $pathNetwork\networkInfo.txt -Append
-    Add-Content $pathNetwork\networkInfo.txt $seperator -Encoding Unicode
-    Add-Content $pathNetwork\networkInfo.txt "----------CONNECTION PROFILE----------" -Encoding Unicode 
-    Get-NetConnectionProfile | Out-File -FilePath $pathNetwork\networkInfo.txt -Append
-    Add-Content $pathNetwork\networkInfo.txt $seperator -Encoding Unicode
-    Add-Content $pathNetwork\networkInfo.txt "----------ROUTING CONFIGURATION----------" -Encoding Unicode 
-    Get-NetRoute | Format-Table * -AutoSize | Out-File -FilePath $pathNetwork\networkInfo.txt -Append
-    Get-NetAdapter | Format-Table * -AutoSize | Out-File -FilePath $pathNetwork\ethernetInfo.txt
-    Get-NetTCPConnection | Out-File -FilePath $pathNetwork\netConnections.txt
+    Get-NetIPAddress | Select-Object -Property PrefixOrigin, InterfaceAlias, AddressFamily, IPv4Address, AddressState |  ConvertTo-Json | Out-File -FilePath $pathNetwork\networkInfo.json
+    
+    Get-NetConnectionProfile |  ConvertTo-Json | Out-File -FilePath $pathNetwork\connectionProfile.json
+    
+    Get-NetRoute |  ConvertTo-Json | Out-File -FilePath $pathNetwork\routing.json
+    
+    Get-NetAdapter | ConvertTo-Json | Out-File -FilePath $pathNetwork\ethernetInfo.json
+    Get-NetTCPConnection |  ConvertTo-Json | Out-File -FilePath $pathNetwork\netConnections.json
     cmd.exe /C "netstat -nao" | Out-File -FilePath $pathNetwork\tcpUDPConnections.txt
-    Get-DnsClientCache | Out-File -FilePath $pathNetwork\DNScaches.txt
-    Get-NetNeighbor | Out-File -FilePath $pathNetwork\arpTable.txt
+    Get-DnsClientCache |  ConvertTo-Json | Out-File -FilePath $pathNetwork\DNScaches.json
+    Get-NetNeighbor |  ConvertTo-Json | Out-File -FilePath $pathNetwork\arpTable.json
 }
 
+Function Get-AVLogs()
+{
+    param()
+    {
+        [string]$mcafeeLogs
+        [string]$mcafeeLogsPath
+        [string]$msAVLogs
+        [string]$msAVLogsPath
+    }
+    $mcafeeLogs = "C:\ProgramData\McAfee\Endpoint Security\Logs"
+    $mcafeeLogsPath = $mainPath + "\logs"
+    
+    If(Test-Path -Path $mcafeeLogs)
+    {
+        Copy-Item -Path $mcafeeLogs -Recurse -Destination $mainPath
+        Rename-Item -Path $mcafeeLogsPath -NewName "McAfeeLogs"
+    }
+    
+    $msAVLogs = "C:\ProgramData\Microsoft\Microsoft Antimalware\Support"
+    $msAVLogsPath = $mainPath + "\support"
+    If(Test-Path -Path $msAVLogs)
+    {
+        Copy-Item -Path $msAVLogs -Recurse -Destination $mainPath
+        Rename-Item -Path $msAVLogsPath -NewName "MSAntivirusLogs"
+    }
+}
+
+#This is a forensics required function that calculates the SHA1 hash of each file.
 Function Get-FileHashes()
 {
     param
     (
         [String[]]$files
     ) 
-    $files = "$pathEventViewer\application.evtx", "$pathEventViewer\security.evtx", "$pathEventViewer\system.evtx", "$mainPath\systemInfo.txt", "$mainPath\accountInfo.txt", "$pathProcess\installedApps.txt", "$pathProcess\runningProcess.txt", "$pathProcess\autorun.txt", "$pathProcess\taskSchedule.txt", "$pathProcess\openedFiles.txt", "$pathProcess\tempFolder.txt", "$pathNetwork\networkInfo.txt", "$pathNetwork\ethernetInfo.txt", "$pathNetwork\netConnections.txt", "$pathNetwork\tcpUDPConnections.txt", "$pathNetwork\DNScaches.txt", "$pathNetwork\arpTable.txt"
+    $files = "$mainpath\accountInfo.txt", "$mainpath\installedPatches.json", "$mainpath\localadmin-users.json", "$mainpath\netbios-info.json", "$mainpath\registry.reg", "$mainpath\systemInfo.json", "$pathEventViewer\Application.csv", "$pathEventViewer\Security.csv", "$pathEventViewer\System.csv", "$pathEventViewer\WindowsPowershell.csv", "$pathNetwork\arpTable.json", "$pathNetwork\connectionProfile.json", "$pathNetwork\DNScaches.json", "$pathNetwork\ethernetInfo.json", "$pathNetwork\netConnections.json", "$pathNetwork\networkInfo.json", "$pathNetwork\routing.json", "$pathNetwork\tcpUDPConnections.txt", "$pathProcess\autorun.json", "$pathProcess\installedApps.json", "$pathProcess\installedApps_Fulldetailed.json", "$pathProcess\openedFiles.json", "$pathProcess\runningProcess.json", "$pathProcess\services.json", "$pathProcess\taskSchedule.json", "$pathProcess\tempFolder_user.json", "$pathProcess\tempFolder_windir.json"
+
     
     ForEach ($file in $files)
     {
-        Get-FileHash $file -Algorithm SHA1 | Format-Table -AutoSize -HideTableHeaders | Out-File -FilePath $mainPath\filesHash.txt -Append
+        If(Test-Path -Path $file)
+        {
+            Get-FileHash $file -Algorithm SHA1 | ConvertTo-Json | Out-File -FilePath $mainPath\filesHash.json -Append
+        }
+        
     }
 }
 
-#Main Functions
+
+###############################################################
+####################--Main Functions--#########################
+###############################################################
+Write-Host "Today: " + $logDateToday + "\nBefore: " + $logDateBefore
 Set-FolderTree
+Write-Host "Folder are created"
 Set-FileTree
+Write-Host "Files are created"
+Write-Host "Extracting system info"
 Get-SystemInfo
+Write-Host "Extracting event logs"
 Get-EventviewerLogs
-#Get-Registry
+Write-Host "Extracting registry"
+Get-Registry
+Write-Host "Extracting account info"
 Get-AccountInfo
+Write-Host "Extracting process"
 Get-ProcessServiceApplication
+Write-Host "Extracting network info"
 Get-NetworkInfo
+Write-Host "Extracting AV Logs"
+Get-AVLogs
 Get-FileHashes
-$destinationZip = $mainPath + ".zip"
-Compress-Archive -Path $mainPath -CompressionLevel Optimal -DestinationPath $destinationZip 
+Write-Host "calculated hashes"
+Compress-Archive -Path $mainPath -CompressionLevel Optimal -DestinationPath $destinationZip
+Write-Host "Folder is compressed"
+Write-Host "-------END------"
