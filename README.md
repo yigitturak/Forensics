@@ -3,13 +3,13 @@ This repository is including Incident Response and Threat hunting scripts
 
 
 -------------------------------------------
-###DFIR_Windows_Server_Triage_PowerShell###
+###DFIR_Windows_Server/Workstation_Triage_PowerShell###
 
-This script will extract triage information that belongs to a specific Windows Server. 
+This script will extract triage information that belongs to a specific Windows system. 
 This script will create a folder under %TEMP% directory with %HOSTNAME%_TRIAGE_%DATE% format.
 The above informations will be created under this folder.
 
-WARNING!!! This script should be run with Administrator rights on the servers.
+WARNING!!! This script should be run with Administrator rights on the system.
 
 The following informations are extracted:
 
@@ -58,8 +58,6 @@ DNS cache entries --> List of complete DNS cache contents
 ARP table information --> List of complete ARP cache contents
 
 Hash of all collected triage data --> SHA1 hash of all data collected
-
-EXAMPLE usage: ./TriageWindows.ps1
 
 
 -------------------------------------------
