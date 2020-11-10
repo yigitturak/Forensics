@@ -1,6 +1,6 @@
-## This File is presenting some useful linux command for parsing IoCs
+################# This File is presenting some useful linux command for parsing IoCs #################
 
-#convert the IoCs to normal
+#################convert the IoCs to normal #################
 cat input_data.txt | sed 's/hxxp/http/g' | sed 's/\[\.\]/\./g' | sed 's/\/$//g' | sed 's/:443//g' | sed 's/:8000//g' | sed 's/:8080//g' | sed 's/:80//g' > output_data.txt
 
 Example:
@@ -14,8 +14,12 @@ http://test.com
 https://example.net
 iocs.cn
 
+################# Expliciting the hashes #################
+grep -E ^[A-Fa-f0-9]{32}$ hash.txt > md5.txt
+grep -E ^[A-Fa-f0-9]{40}$ hash.txt > sha1.txt
+grep -E ^[A-Fa-f0-9]{64}$ hash.txt > sha256.txt
 
-#Bash script for preparing Kibana search
+################# Bash script for preparing Kibana search #################
 
 #!/bin/bash
 TOTALLine=`wc -l < output_data.txt`
