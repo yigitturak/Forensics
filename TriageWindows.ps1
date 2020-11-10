@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-This script will extract triage information that belongs to a specific Windows Server
+This script will extract triage information that belongs to a specific Windows system
 
 .DESCRIPTION
-This script will extract triage information that belongs to a specific Windows Server:
+This script will extract triage information that belongs to a specific Windows system:
 
     System information --> Build, service pack level, installed patches, etc
     Windows version --> Logs the version number of the target OS
