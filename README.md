@@ -4,7 +4,9 @@ This repository is including Incident Response and Threat hunting scripts
 
 -------------------------------------------
 Triage_v1.1-PrintNightmare.ps1
+
 ###DFIR_CVE-2021-1675
+
 This script is reconfigured regarding to CVE-2021-1675 vulnerability. It is extracting the standard triage information and IoCs of this vulnerability.
 
 -------------------------------------------
