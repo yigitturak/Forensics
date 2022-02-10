@@ -1,7 +1,5 @@
 ##############################
-##### ING SDC Europe #########
 ### Triage script for RHEL ###
-##### sdc.europe@ing.com #####
 ##############################
 
 ###Run this script with root permission###
