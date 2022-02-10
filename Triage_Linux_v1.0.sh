@@ -9,7 +9,6 @@
 #Journal CTL.SOS Report.
 #Get list of all connections.
 #Get list of all open files.
-#TCP Dump run for 15 minutes.
 #Running processes and services--> List of all running processes.
 #Service start-up scripts (/etc/inittab, /etc/init.d, /etc/rc.d etc.)
 #List of scheduled tasks (cron jobs)
